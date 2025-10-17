@@ -6,8 +6,29 @@ import numpy as np
 app = FastAPI()
 
 # Example: load known face
-known_image = face_recognition.load_image_file("photo.jpg")
-known_encoding = face_recognition.face_encodings(known_image)[0]
+
+known_encodings = []
+known_names = []
+
+# First face
+img1 = face_recognition.load_image_file("photo.jpg")
+known_encodings.append(face_recognition.face_encodings(img1)[0])
+known_names.append("Solohiddin")
+
+# Second face
+img2 = face_recognition.load_image_file("ozodbek.jpg")
+known_encodings.append(face_recognition.face_encodings(img2)[0])
+known_names.append("Ozodbek")
+
+# # Third face
+# img3 = face_recognition.load_image_file("alice.jpg")
+# known_encodings.append(face_recognition.face_encodings(img3)[0])
+# known_names.append("Alice")
+
+
+# known_image = face_recognition.load_image_file("photo.jpg")
+# known_encoding = face_recognition.face_encodings(known_image)[0]
+
 
 @app.post("/recognize/")
 async def recognize_face(file: UploadFile = File(...)):
@@ -20,9 +41,9 @@ async def recognize_face(file: UploadFile = File(...)):
     if len(encodings) == 0:
         return {"error": "No face found"}
 
-    # Compare with known face
-    matches = face_recognition.compare_faces([known_encoding], encodings[0])
-    distance = face_recognition.face_distance([known_encoding], encodings[0])[0]
+    # Compare with known faces
+    matches = face_recognition.compare_faces(known_encodings, encodings[0])
+    distance = face_recognition.face_distance(known_encodings, encodings[0])[0]
 
     return {
         "match": bool(matches[0]),
@@ -43,9 +64,9 @@ def recognize_from_camera():
         encodings = face_recognition.face_encodings(rgb_frame)
 
         for encoding in encodings:
-            matches = face_recognition.compare_faces([known_encoding], encoding)
+            matches = face_recognition.compare_faces(known_encodings, encoding)
             if True in matches:
-                result = {"match": True, "name": "Known Person"}
+                result = {"match": True, "name": known_names[matches.index(True)]}
                 cap.release()
                 cv2.destroyAllWindows()
                 return result
@@ -57,6 +78,9 @@ def recognize_from_camera():
     cap.release()
     cv2.destroyAllWindows()
     return result
+
+
+
 
 # from fastapi import FastAPI
 # from pydantic import BaseModel
