@@ -1,3 +1,4 @@
+import cv2
 from fastapi import FastAPI, File, UploadFile
 import face_recognition
 import numpy as np
@@ -28,6 +29,34 @@ async def recognize_face(file: UploadFile = File(...)):
         "confidence": float(1 - distance)
     }
 
+@app.get("/recognize-camera/")
+def recognize_from_camera():
+    cap = cv2.VideoCapture(0)
+    result = {"match": False, "name": None}
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        encodings = face_recognition.face_encodings(rgb_frame)
+
+        for encoding in encodings:
+            matches = face_recognition.compare_faces([known_encoding], encoding)
+            if True in matches:
+                result = {"match": True, "name": "Known Person"}
+                cap.release()
+                cv2.destroyAllWindows()
+                return result
+
+        # Press 'q' to stop manually
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    return result
 
 # from fastapi import FastAPI
 # from pydantic import BaseModel
